@@ -6,7 +6,7 @@
 ---
 
 ## 前提条件
-* AISのログデータにGPSの信号($GPRMC, $GPGGA)が受信できていない.
+* AISのログデータにGPSの信号($GPRMC, $GPGGA)が受信できていない.
 * GPSのログデータを別途受信している.
 * AIS, GPS, 共にタイムスタンプを記録している. (フォーマットは "minicom" のタイムスタンプ)
 
@@ -19,7 +19,7 @@ AISの受信を開始するとAISの信号と共に, 1秒ごとに適当なGPS�
 2. ```sudo apt-get install minicom screen```を実行する.
 3. AIS, GPSのシリアルケーブル(USB)をRaspberry Piに挿し込む. なお, 入れる順番でポート名が変わるので注意. ここではAISのUSBポートを "/dev/ttyUSB0", GPSのUSBポートを "/dev/ttyUSB1"とする.
 4. ```sudo minicom -s```で minicomを起動する.
-5. "画面とキーボード", "コマンドのためのキー" を選択し, "^B" と入力する. これをしないと ```screen``` を使った時に支障が出る.
+5. "画面とキーボード", "コマンドのためのキー" を選択し, "^B"と入力する. これをしないと ```screen``` を使った時に支障が出る.
 6. "シリアルポート" を選択し, 下記の通りに設定して, 設定を保存する. どちらか, もしくはどちらも名前をつけて保存すること.
 
 | - | AIS | GPS |
@@ -33,16 +33,16 @@ AISの受信を開始するとAISの信号と共に, 1秒ごとに適当なGPS�
 ### ログの取り方 (USBメモリ推奨)
 1. Raspberry Piを起動する.
 2. Raspberry PiにLANケーブル, USBメモリをつなげる.
-3. Windowsなら"TeraTerm", Mac等なら"Terminal"から, 次のコマンドを実行する.   
+3. Windowsなら"TeraTerm", Mac等なら"Terminal"から, 次のコマンドを実行する.   
 ```ssh pi@raspberrypi.local```   
 パスワードは初期設定の場合は```raspberry```である.
 4. ```cd /media/pi/[USBメモリのパス]```を入力し, USBメモリのディレクトリに移動する.
-5. ```screen```コマンドを実行し, そのままEnterキーを押す.
-6. AISのUSBポートを接続後, ```sudo minicom [AISの設定名]```を実行する.
+5. ```screen```コマンドを実行し, そのままEnterキーを押す.
+6. AISのUSBポートを接続後, ```sudo minicom [AISの設定名]```を実行する.
 7. "Ctrl-B + Z" を押し, "N" を押す.
 8. 再び "Ctrl-B + Z" を押し, "L" を押す. AISのログのファイル名を指定する.
 9. "Ctrl-A + D" を押し, Screenを移動する.
-10. ```screen```コマンドを実行し, そのままEnterキーを押す.
+10. ```screen```コマンドを実行し, そのままEnterキーを押す.
 11. GPSのUSBポートを接続後, ```sudo minicom [GPSの設定名]```を実行する.
 12. "Ctrl-B + Z" を押し, "N" を押す.
 13. 再び "Ctrl-B + Z" を押し, "L" を押す. GPSのログのファイル名を指定する.
@@ -51,10 +51,10 @@ AISの受信を開始するとAISの信号と共に, 1秒ごとに適当なGPS�
 
 ### ログの止め方
 1. ある程度ログが取得できたら, 3を参考にRaspberry Piにログインする.
-2. ```srceen -ls```を実行して, 実行中のscreenを確認する.
+2. ```srceen -ls```を実行して, 実行中のscreenを確認する.
 3. ```screen -r [仮想番号]```を実行して, AIS受信かGPS受信のどちらかに移動する.
 4. "Ctrl-B Q" を押して, minicomを終了する.
-5. "Ctrl-A K"を押したのち, "Y"を押す. これでscreenをKillできる.
+5. "Ctrl-A K"を押したのち, "Y"を押す. これでscreenをkillできる.
 6. ```screen -r```を実行して, 18〜20を実行する. 
 7. ```sudo halt```を実行して, Raspberry Piの電源を切る.
 
@@ -66,3 +66,7 @@ AISの受信を開始するとAISの信号と共に, 1秒ごとに適当なGPS�
 
 例 :     
 ```python3 TimestampMatching.py -a ais_sample.nmea -g gps_sample.nmea -o data_sample.nmea```
+
+## デコードしよう
+Windowsの場合, [AIS_DECODER](https://www.vector.co.jp/soft/winnt/business/se508058.html)というソフトウェアがある.   
+これを使うと, CSVファイルとして出力される.
