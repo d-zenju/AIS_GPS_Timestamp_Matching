@@ -93,7 +93,7 @@ def aisgps_output(output_file, output_data, timestamp_flag):
 
 # AIS Decode (dict : key[Message Type], value[Message])
 def ais_decode(output_data):
-    utc = '120000'
+    utc = 'xxxxxx'
     msg = ''
     flag = 0
     length = 0
@@ -122,9 +122,12 @@ def ais_decode(output_data):
                         decode['type'] = decode['id']
                     
                     if decode['type'] in ais_data:
-                        ais_data[decode['type']].append(decode)
+                        if utc in ais_data[decode['type']]:
+                            ais_data[decode['type']][utc].append(decode)
+                        else:
+                            ais_data[decode['type']].update({utc : [decode]})
                     else:
-                        ais_data[decode['type']] = [decode]
+                        ais_data[decode['type']] = {utc : [decode]}
                 except:
                     continue
         else:
@@ -136,11 +139,73 @@ def ais_decode(output_data):
 
 # AIS Decode Output
 def ais_decode_output(output_file, ais_data, csv_flag):
+    # CSV
     if csv_flag:
         if 123 in ais_data:
             output_file += '_type123.csv'
-            header = []
+            output = open(output_file, 'w')
+            writer = csv.writer(output)
 
+            header = [
+                'Time (UTC)', 'Message Type', 'Repeat Indicator',\
+                'MMSI', 'Navigation Status', 'Rate of Turn (ROT)',\
+                'Speed Over Ground (SOG)', 'Position Accuracy',\
+                'Longitude', 'Latitude', 'Course Over Ground (COG)',\
+                'True Heading (HDG)', 'Time Stamp', 'Maneuver Indicator',\
+                'Spare', 'RAIM flag'
+            ]
+            writer.writerow(header)
+
+            utc = ais_data[123].keys()
+            data = ais_data[123].items()
+            for dat in data:
+                for d in dat[1]:
+                    row = [
+                        d['utc'], d['id'], d['repeat_indicator'],\
+                        d['mmsi'], d['nav_status'], d['rot_over_range'],\
+                        d['sog'], d['position_accuracy'], d['x'], d['y'],\
+                        d['cog'], d['true_heading'], d['timestamp'],\
+                        d['special_manoeuvre'], d['spare'], d['raim']
+                        ]
+                    writer.writerow(row)
+            output.close()
+        
+        if 5 in ais_data:
+            output_file += '_type5.csv'
+            output = open(output_file, 'w')
+            writer = csv.writer(output)
+
+            header = [
+                'Time (UTC)', 'Message Type', 'Repeat Indicator', \
+                'MMSI', 'AIS Version', 'IMO Number', 'Call Sign', \
+                'Vessel Name', 'Ship Type', 'Dimension to Bow',\
+                'Dimension to Stern', 'Dimension to Port', 'Dimestion to Starboard',\
+                'Position Fix Type', 'ETA month (UTC)', 'ETA day (UTC)',\
+                'ETA hour (UTC)', 'ETA minute (UTC)', 'Draught', 'Destination',\
+                'DTE', 'Spare'
+            ]
+            writer.writerow(header)
+
+            utc = ais_data[5].keys()
+            data = ais_data[5].items()
+
+            for dat in data:
+                for d in dat[1]:
+                    row = [
+                        d['utc'], d['id'], d['repeat_indicator'],d['mmsi'],\
+                        d['ais_version'], d['imo_num'], d['callsign'],\
+                        d['name'], d['type_and_cargo'], d['dim_a'], d['dim_b'],\
+                        d['dim_c'], d['dim_d'], d['fix_type'], d['eta_month'],\
+                        d['eta_day'], d['eta_hour'], d['eta_minute'], d['draught'],\
+                        d['destination'], d['dte'], d['spare']
+                        ]
+                    writer.writerow(row)
+
+            output.close()
+            
+
+
+    # JSON
     else:
         output_file += '.json'
         output = open(output_file, 'w')
