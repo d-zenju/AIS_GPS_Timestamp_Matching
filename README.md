@@ -65,19 +65,19 @@ Thanks, Kurt Schwehr!
 libaisについては [https://github.com/schwehr/libais](https://github.com/schwehr/libais) を参照.
 ### Case 1. AIS情報(GPSが不適切)に含まれるGPS情報($GPRMCなど)を置き換えるコマンド
 * タイムスタンプなし
-```phthon3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス]```
+```phthon3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス]```
 * タイムスタンプあり   
-```phthon3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス] -t```
+```phthon3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス] -t```
 ### Case 2. Case 1に加えて, AISをデコードするコマンド
 * JSON
-```pyhton3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス] -j```
+```pyhton3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス] -j```
 * CSV
-```pyhton3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス] -c```
+```pyhton3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス] -c```
 ### Case 3. AIS情報(GPS適切)をデコードするコマンド
 * JSON
-```pyhton3 TimestampMatching.py -n [AISファイルパス] -o [出力ファイルパス] -j```
+```pyhton3 TimestampMatching.py -n [AISファイルパス] -o [出力ファイルパス] -j```
 * CSV
-```pyhton3 TimestampMatching.py -n [AISファイルパス] -o [出力ファイルパス] -c```
+```pyhton3 TimestampMatching.py -n [AISファイルパス] -o [出力ファイルパス] -c```
 
 例 :
 ```python3 TimestampMatching.py -a ais_sample.nmea -g gps_sample.nmea -o data_sample -c```
