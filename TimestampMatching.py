@@ -4,6 +4,10 @@ import argparse
 import ais
 import json
 import csv
+import pandas
+import time
+import datetime
+import types
 
 def main():
     parser = argparse.ArgumentParser (
@@ -14,17 +18,16 @@ def main():
         add_help=True
         )
 
-    parser.add_argument('-a', '--ais', help='Input AIS filepath')
-    parser.add_argument('-g', '--gps', help='Input GPS filepath')
-    parser.add_argument('-n', '--nmea', help='Input NMEA(AIS and GPS) filepath')
+    parser.add_argument('-a', '--ais', help='AIS filepath')
+    parser.add_argument('-g', '--gps', help='GPS filepath')
     parser.add_argument('-o', '--output', help='Output filepath')
-    parser.add_argument('-t', '--timestamp', help='(Option) Insert Timestamp', action='store_true')
-    parser.add_argument('-j', '--json', help='(Option) AIS Decode for JSON', action='store_true')
-    parser.add_argument('-c', '--csv', help='(Option) AIS Decode for CSV', action='store_true')
+    parser.add_argument('-d', '--day', help='Offset day; ex. 2 (+2day)')
+    parser.add_argument('-j', '--json', help='AIS Decode for JSON', action='store_true')
+    parser.add_argument('-c', '--csv', help='AIS Decode for CSV', action='store_true')
     args = parser.parse_args()
 
     # 引数読込(AISファイル名, GPSファイル名)
-    if args.ais and args.gps:
+    if args.ais and args.gps and args.output:
         input_ais_file = args.ais
         input_gps_file = args.gps
 
@@ -40,38 +43,29 @@ def main():
         # AIS, GPS Timestamp Matching
         output_data = timestamp_matching(ais_row, gps_row)
 
-    # 引数読込(NMEAファイル名)
-    if args.nmea:
-        input_nmea_file = args.nmea
-        print('NMEA Filepath : ' + input_nmea_file)
-        nmea_file = open(input_nmea_file, 'r')
-        nmea_data = nmea_file.readlines()
-        output_data = []
-        for ndat in nmea_data:
-            msg = ndat.split(',')
-            ins = ['', msg]
-            output_data.append(ins)
+        # 日時補正
+        if args.day:
+            offset_day = int(args.day)
+        else:
+            offset_day = 0
+
+        # TimestampをGPS Time(UTC)に置換
+        output_data = replace_utc(output_data, offset_day)
             
-    # 引数読込(OUTPUTファイル名)
-    if args.output:
+        # 引数読込(OUTPUTファイル名)
         output_file = args.output
 
-    # AIS Decode & Output
-    if args.json and args.output:
-        print('OUTPUT(JSON) Filepath : ' + output_file + '[_types] and [_mmsi].json')
-        ais_data = ais_decode(output_data)
-        ais_decode_output(output_file, ais_data, 'json')
-    elif args.csv and args.output:
-        print('OUTPUT(CSV) Filepath : ' + output_file + '_type[number].csv')
-        ais_data = ais_decode(output_data)
-        ais_decode_output(output_file, ais_data, 'csv')
-    else:
-        if not args.nmea and args.output:
-            if args.timestamp:
-                print('OUTPUT(Timestamp, NMEA) Filepath : ' + output_file + '_t.txt')
-            else:
-                print('OUTPUT(NMEA) Filepath : ' + output_file + '.nmea')
-            aisgps_output(output_file, output_data, args.timestamp)
+        # AIS Decode & Output
+        if args.json:
+            print('OUTPUT(JSON) Filepath : ' + output_file + '[_types] and [_mmsi].json')
+            ais_data = ais_decode(output_data)
+            ais_decode_output(output_file, ais_data, 'json')
+        elif args.csv:
+            print('OUTPUT(CSV) Filepath : ' + output_file + '_type[number].csv')
+            ais_data = ais_decode(output_data)
+            ais_decode_output(output_file, ais_data, 'csv')
+        else:
+            aisgps_output(output_file, output_data)
 
 
 # AIS, GPS Timestamp Matching
@@ -82,7 +76,7 @@ def timestamp_matching(ais_row, gps_row):
         ais_split = ais_line.split(' ')
         msg = ais_split[2].split(',')
         timestamp = ais_split[0].replace('[', '') + ' ' + ais_split[1].replace(']', '')
-        ais_split = [timestamp + ' ' + msg[0] , msg, timestamp]
+        ais_split = [timestamp + ' ' + msg[0] , msg]
         ais_list.append(ais_split)
     
     # GPS dict
@@ -95,40 +89,105 @@ def timestamp_matching(ais_row, gps_row):
 
     # Output list & AIS, GPS Match
     output_data = []
+    flag = 0
     for ais_l in ais_list:
         if ais_l[1][0] != '!AIVDM':
             if ais_l[0] in gps_data.keys():
                 ais_l[1] = gps_data[ais_l[0]]
-        output_data.append([ais_l[0], ais_l[1], ais_l[2]])
-    
+                flag += 1
+        if flag != 0:
+            output_data.append([ais_l[0], ais_l[1]])
+
+    return output_data
+
+
+# Replace UTC Time and Offset day
+def replace_utc(datas, offset_day):
+    output_data = []
+    timestamp = datetime.datetime(
+        int(datas[0][0][:4]),
+        int(datas[0][0][5:7]),
+        int(datas[0][0][8:10]),
+        int(datas[0][0][11:13]),
+        int(datas[0][0][14:16]),
+        int(datas[0][0][17:19])
+    )
+    diff_time = 0
+    diff_day = datetime.timedelta(days=offset_day)
+
+    for data in datas:
+        if diff_time == 0:
+            if data[1][0] == '$GPRMC' or data[1][0] == '$GPGGA':
+                utc_time = datetime.datetime(
+                    int(data[0][:4]),
+                    int(data[0][5:7]),
+                    int(data[0][8:10]),
+                    int(data[1][1][:2]),
+                    int(data[1][1][2:4]),
+                    int(data[1][1][4:6])
+                )
+                stamp_time = datetime.datetime(
+                    int(data[0][:4]),
+                    int(data[0][5:7]),
+                    int(data[0][8:10]),
+                    int(data[0][11:13]),
+                    int(data[0][14:16]),
+                    int(data[0][17:19])
+                )
+                diff_time = utc_time - stamp_time
+        else:
+            if data[1][0] == '$GPRMC' or data[1][0] == '$GPGGA':
+                stamp_time = datetime.datetime(
+                    int(data[0][:4]),
+                    int(data[0][5:7]),
+                    int(data[0][8:10]),
+                    int(data[0][11:13]),
+                    int(data[0][14:16]),
+                    int(data[0][17:19])
+                )
+                timestamp = stamp_time + diff_time + diff_day
+            data[0] = timestamp.strftime('%Y-%m-%dT%H:%M:%SZ')
+            output_data.append(data)
+    output_data = sorted(output_data)
+    return output_data
+
+
+# Offset Date
+def offset_date(datas, date_offset):
+    output_data = []
+    diff_time = date_offset - stamp_time
+    print(diff_time)
+    for data in datas:
+        stamp_time = datetime.datetime(
+            int(data[0][:4]),
+            int(data[0][5:7]),
+            int(data[0][8:10]),
+            int(data[0][11:13]),
+            int(data[0][14:16]),
+            int(data[0][17:19])
+        )
+        timestamp = stamp_time + diff_time
+        data[0] = timestamp.strftime('%Y-%m-%dT%H:%M:%SZ')
+        output_data.append(data)
+    output_data = sorted(output_data)
     return output_data
 
 
 # AIS, GPS Output (to File)
-def aisgps_output(output_file, output_data, timestamp_flag):
-    if timestamp_flag:
-        output_file += '_t.txt'
-    else:
-        output_file += '.nmea'
-
-    output = open(output_file, 'w')
+def aisgps_output(output_file, output_data):
+    output = open(output_file + '.nmea', 'w')
     for out in output_data:
-        txt = ''
-        for t in out[1]:
-            txt += t + ','
-        txt = txt[:-1]
-
-        ## どちらか
-        if timestamp_flag:
-            output.write('[' + out[2] + '] ' + txt)
-        else:
-            output.write(txt)
+        msg = str(out[1])
+        msg = msg.replace('[', '')
+        msg = msg.replace(']', '')
+        msg = msg.replace(' ', '')
+        output.write(str(out[0]) + ' ' + msg + '\n')
     output.close()
 
 
 # AIS Decode (dict : key[Message Type], value[Message])
 def ais_decode(output_data):
-    utc = 'xxxxxx'
+    utc = ''
     msg = ''
     flag = 0
     length = 0
@@ -335,6 +394,7 @@ def ais_decode(output_data):
             if data[1][1] == '1':
                 msg = data[1][5]
                 length = 0
+                flag = 0
             else:
                 if flag == 0:
                     msg = data[1][5]
@@ -346,7 +406,7 @@ def ais_decode(output_data):
             if flag == 0:
                 try:
                     decode = ais.decode(msg, length)
-                    decode['utc'] = utc
+                    decode['utc'] = data[0]
                     if 'station_type' in decode:
                         decode['station_type_text'] = station_types[decode['station_type']]
 
@@ -368,18 +428,19 @@ def ais_decode(output_data):
                     else:
                         decode['type'] = decode['id']
                     
-                    if decode['type'] in ais_data:
-                        if utc in ais_data[decode['type']]:
-                            ais_data[decode['type']][utc].append(decode)
+                    if len(utc) > 0:
+                        if decode['type'] in ais_data:
+                            if utc in ais_data[decode['type']]:
+                                ais_data[decode['type']][utc].append(decode)
+                            else:
+                                ais_data[decode['type']].update({utc : [decode]})
                         else:
-                            ais_data[decode['type']].update({utc : [decode]})
-                    else:
-                        ais_data[decode['type']] = {utc : [decode]}
+                            ais_data[decode['type']] = {utc : [decode]}
                 except:
                     continue
         else:
             # '$GPGGA, $GPRMC --> UTC Time'
-            utc = data[1][1][:6]
+            utc = data[0]
     
     return ais_data
 

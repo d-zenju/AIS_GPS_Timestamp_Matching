@@ -1,0 +1,2 @@
+id,mmsi,repeat_indicator,reservations,spare,type,utc
+20,4310302,0,"[{'offset': 5, 'num_slots': 5, 'timeout': 6, 'incr': 1125}]",0,20,2018-05-11T05:50:17Z
