@@ -63,21 +63,14 @@ AISの受信を開始するとAISの信号と共に, 1秒ごとに適当なGPS�
 ```pip3 install libais```で, AISをデコードするライブラリをインストールする.   
 Thanks, Kurt Schwehr!   
 libaisについては [https://github.com/schwehr/libais](https://github.com/schwehr/libais) を参照.
-### Case 1. AIS情報(GPSが不適切)に含まれるGPS情報($GPRMCなど)を置き換えるコマンド
-* タイムスタンプなし
-```phthon3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス]```
-* タイムスタンプあり   
-```phthon3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス] -t```
-### Case 2. Case 1に加えて, AISをデコードするコマンド
+```pip3 install argparse```も, 同様にインストールする.   
+### AISをデコードするコマンド
 * JSON
 ```pyhton3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス] -j```
 * CSV
 ```pyhton3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス] -c```
-### Case 3. AIS情報(GPS適切)をデコードするコマンド
-* JSON
-```pyhton3 TimestampMatching.py -n [AISファイルパス] -o [出力ファイルパス] -j```
-* CSV
-```pyhton3 TimestampMatching.py -n [AISファイルパス] -o [出力ファイルパス] -c```
+### AISとGPSのデータを統合しただけのNMEAを出力するコマンド
+```pyhton3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス]```
 
 例 :
 ```python3 TimestampMatching.py -a ais_sample.nmea -g gps_sample.nmea -o data_sample -c```

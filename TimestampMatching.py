@@ -4,10 +4,8 @@ import argparse
 import ais
 import json
 import csv
-import pandas
 import time
 import datetime
-import types
 
 def main():
     parser = argparse.ArgumentParser (
