@@ -1,5 +1,0 @@
-callsign,dim_a,dim_b,dim_c,dim_d,id,mmsi,part_num,repeat_indicator,shiptype_text(type_and_cargo),spare,type,type_and_cargo,utc,vendor_id
-JD3025 ,64,10,3,9,24,431001149,1,0,"Cargo, all ships of this type",0,24,70,2018-05-11T05:50:47Z,AMC@@@@
-@@@@@@@,6,6,2,2,24,431010582,1,0,Towing,0,24,31,2018-05-11T05:51:04Z,"SMTEWG,"
-JG5683 ,31,14,6,2,24,432804000,1,0,"Cargo, all ships of this type",0,24,70,2018-05-11T05:51:29Z,FEC0001
-JD3431 ,19,24,6,2,24,431004162,1,0,Spare - Local Vessel,0,24,57,2018-05-11T05:53:01Z,FEC0001
