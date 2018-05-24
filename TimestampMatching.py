@@ -53,19 +53,20 @@ def main():
             output_data.append(ins)
             
     # 引数読込(OUTPUTファイル名)
-    output_file = args.output
+    if args.output:
+        output_file = args.output
 
     # AIS Decode & Output
-    if args.json:
+    if args.json and args.output:
         print('OUTPUT(JSON) Filepath : ' + output_file + '[_types] and [_mmsi].json')
         ais_data = ais_decode(output_data)
         ais_decode_output(output_file, ais_data, 'json')
-    elif args.csv:
+    elif args.csv and args.output:
         print('OUTPUT(CSV) Filepath : ' + output_file + '_type[number].csv')
         ais_data = ais_decode(output_data)
         ais_decode_output(output_file, ais_data, 'csv')
     else:
-        if not args.nmea:
+        if not args.nmea and args.output:
             if args.timestamp:
                 print('OUTPUT(Timestamp, NMEA) Filepath : ' + output_file + '_t.txt')
             else:
