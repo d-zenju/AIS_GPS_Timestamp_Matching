@@ -62,7 +62,7 @@ AISの受信を開始するとAISの信号と共に, 1秒ごとに適当なGPS�
 ### はじめに
 ```pip3 install libais```で, AISをデコードするライブラリをインストールする.   
 Thanks, Kurt Schwehr!   
-libaisについては [https://github.com/schwehr/libais](https://github.com/schwehr/libais) を参照.
+libaisについては [https://github.com/schwehr/libais](https://github.com/schwehr/libais) を参照.   
 ```pip3 install argparse```も, 同様にインストールする.   
 ### AISをデコードするコマンド
 * JSON
