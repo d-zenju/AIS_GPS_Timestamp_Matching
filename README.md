@@ -60,20 +60,34 @@ AISの受信を開始するとAISの信号と共に, 1秒ごとに適当なGPS�
 
 ## AIS・GPSのログを一つにまとめよう
 ### はじめに
-```pip3 install libais```で, AISをデコードするライブラリをインストールする.   
-Thanks, Kurt Schwehr!   
-libaisについては [https://github.com/schwehr/libais](https://github.com/schwehr/libais) を参照.   
-```pip3 install argparse```も, 同様にインストールする.   
-### AISをデコードするコマンド
-* JSON
+以下のライブラリを```pip3```でインストールする.
+* ```pip3 install libais```
+* ```pip3 install pymap3d```
+* ```pip3 install argparse```
+### コマンド
+```python3 TimestampMatching.py [Options]```   
+#### Options
+* ```-a [AISファイルパス]``` : AISファイルパス(必須)
+* ```-g [GPSファイルパス]``` : GPSファイルパス(必須)
+* ```-o [出力ファイルパス]``` : 出力ファイルパス（拡張子は書かないこと・必須）
+* ```-j``` : JSONで出力する
+* ```-c``` : CSVで出力する(指定しない場合はJSONとなる)
+* ```-d [スライドする日数]``` : AIS, GPSのタイムスタンプをスライドする日数. 2日後なら"-d 2", 3日前なら"-d -3"と入力する.
+* ```-l``` : AIS(Type1,2,3)の緯度経度を1秒毎に補間する.
+* ```-r [緯度],[経度],[高度]``` : 指定した緯度経度高度からAIS(Type1,2,3)の緯度経度までの方位(deg),仰角(deg),距離(m)を計算する. カンマ区切り, スペースなしで緯度経度高度を指定する. (```-l```が必須)
+#### 例
+##### AISをデコードして, JSONで出力する
 ```pyhton3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス] -j```
-* CSV
-```pyhton3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス] -c```
-### AISとGPSのデータを統合しただけのNMEAを出力するコマンド
-```pyhton3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス]```
-
-例 :
-```python3 TimestampMatching.py -a ais_sample.nmea -g gps_sample.nmea -o data_sample -c```
+##### AISの緯度経度を補間して, 距離を求めて, CSVで出力する
+```python3 TimestampMatching.py -a [AISファイルパス] -g [GPSファイルパス] -o [出力ファイルパス] -c -l -r 35.313034,139.783935,0```
+### 注意
+AIS, GPSのファイル形式は下記のようになる. ログの最初と最後が中途半端になることが多いので, よく確認すること.
+```
+[2018-05-11 03:50:03] !AIVDM,1,1,,B,16K2N?P001awhp`DHtka1`Nt08Av,0*03
+[2018-05-11 03:50:03] !AIVDM,1,1,,B,36K2:g@00Bb0P5hDDAA=G0:t0001,0*5C
+[2018-05-11 03:50:03] $GPGGA,120939.000,0000.0000,N,00000.0000,E,0,00,0.0,0.0,M,,,,0000*0E
+[2018-05-11 03:50:03] $GPRMC,120939.000,V,0000.0000,N,00000.0000,E,000.0,000.0,280606,,,N*7C
+```
 
 ## 別の方法でデコードしよう
 Windowsの場合, [AIS_DECODER](https://www.vector.co.jp/soft/winnt/business/se508058.html)というソフトウェアがある.   

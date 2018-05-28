@@ -2,6 +2,7 @@
 
 import argparse
 import ais
+import pymap3d as pm
 import json
 import csv
 import time
@@ -22,6 +23,8 @@ def main():
     parser.add_argument('-d', '--day', help='Offset day; ex. 2 (+2day)')
     parser.add_argument('-j', '--json', help='AIS Decode for JSON', action='store_true')
     parser.add_argument('-c', '--csv', help='AIS Decode for CSV', action='store_true')
+    parser.add_argument('-l', '--lerp', help='Calc linear interpolation for positions "lat,lng,alt"', action='store_true')
+    parser.add_argument('-r', '--range', help='Calc distance between the two points, input lattitude, longitude, altitude. ex. 35,135,0')
     args = parser.parse_args()
 
     # 引数読込(AISファイル名, GPSファイル名)
@@ -54,16 +57,31 @@ def main():
         output_file = args.output
 
         # AIS Decode & Output
-        if args.json:
-            print('OUTPUT(JSON) Filepath : ' + output_file + '[_types] and [_mmsi].json')
-            ais_data = ais_decode(output_data)
-            ais_decode_output(output_file, ais_data, 'json')
-        elif args.csv:
+        if args.csv:
             print('OUTPUT(CSV) Filepath : ' + output_file + '_type[number].csv')
             ais_data = ais_decode(output_data)
             ais_decode_output(output_file, ais_data, 'csv')
         else:
-            aisgps_output(output_file, output_data)
+            print('OUTPUT(JSON) Filepath : ' + output_file + '[_types] and [_mmsi].json')
+            ais_data = ais_decode(output_data)
+            ais_decode_output(output_file, ais_data, 'json')
+        
+        # Calc linear interpotion for positoins
+        if args.lerp:
+            lerp = calc_lerp(ais_data)
+            lerp_flag = False
+            if args.range:
+                base = args.range.split(',')
+                lerp = calc_distance(lerp, float(base[0]), float(base[1]), float(base[2]))
+                lerp_flag = True
+            if args.csv:
+                lerp_output(output_file, lerp, 'csv', lerp_flag)
+            else:
+                lerp_output(output_file, lerp, 'json', lerp_flag)
+            
+            if args.range:
+                base = args.range.split(',')
+                dist = calc_distance(lerp, float(base[0]), float(base[1]), float(base[2]))
 
 
 # AIS, GPS Timestamp Matching
@@ -504,6 +522,100 @@ def ais_decode_output(output_file, ais_data, filetype):
         
         json.dump(mmsi, output)
         output.close()
+
+def calc_lerp(ais_data):
+    ships = {}
+    data = ais_data[123].items()
+    for dat in data:
+        for d in dat[1]:
+            if 'mmsi' in d:
+                position = {
+                    'lat' : d['y'],
+                    'lng' : d['x']
+                }
+                if not ships.get(d['mmsi']):
+                    ships.update({d['mmsi']:{d['utc']:position}})
+                else:
+                    ships[d['mmsi']].update({d['utc']:position})
+    result = {}
+    for mmsi in ships.items():
+        utcdatas = list(mmsi[1].keys())
+        len_utc = len(utcdatas)
+        if len_utc > 1:
+            for i in range(len_utc - 1):
+                start_time = datetime.datetime.strptime(utcdatas[i], '%Y-%m-%dT%H:%M:%SZ')
+                end_time = datetime.datetime.strptime(utcdatas[i+1], '%Y-%m-%dT%H:%M:%SZ')
+                start_unix = int(time.mktime(start_time.timetuple()))
+                end_unix = int(time.mktime(end_time.timetuple()))
+                sub_second = end_unix - start_unix
+                for sec in range(sub_second):
+                    now_unix = start_unix + sec
+                    now_time = datetime.datetime.fromtimestamp(now_unix).strftime('%Y-%m-%dT%H:%M:%SZ')
+                    lat0 = mmsi[1][utcdatas[i]]['lat']
+                    lat1 = mmsi[1][utcdatas[i+1]]['lat']
+                    lng0 = mmsi[1][utcdatas[i]]['lng']
+                    lng1 = mmsi[1][utcdatas[i+1]]['lng']
+                    lat = lat0 + (lat1 - lat0) * sec / sub_second
+                    lng = lng0 + (lng1 - lng0) * sec / sub_second
+                    if not result.get(mmsi[0]):
+                        result[mmsi[0]] = {now_time:{'lat':lat, 'lng':lng}}
+                    else:
+                        result[mmsi[0]].update({now_time:{'lat':lat, 'lng':lng}})
+            result[mmsi[0]].update({utcdatas[-1]:mmsi[1][utcdatas[-1]]})
+        else:
+            result[mmsi[0]] = mmsi[1]
+    return result
+
+
+def lerp_output(output_file, lerp_data, filetype, distance_flag):
+    if filetype == 'csv':
+        output_file_csv = output_file + '_lerp.csv'
+        output = open(output_file_csv, 'w')
+        writer = csv.writer(output)
+        if distance_flag == True:
+            header = ['MMSI', 'UTC Time', 'Latitude', 'Longitude', 'Azimuth(deg)', 'Elevation(deg)', 'Slant Range(m)']
+        else:
+            header = ['MMSI', 'UTC Time', 'Latitude', 'Longitude']
+        writer.writerow(header)
+        for dat in lerp_data.items():
+            for d in dat[1]:
+                if distance_flag == True:
+                    line = [dat[0], d, dat[1][d]['lat'], dat[1][d]['lng'], dat[1][d]['az'], dat[1][d]['el'], dat[1][d]['range']]
+                else:
+                    line = [dat[0], d, dat[1][d]['lat'], dat[1][d]['lng']]
+                writer.writerow(line)
+        output.close()
+
+    else:
+        # MMSI - Time - Position
+        output_file_jsn = output_file + '_lerp_mmsi.json'
+        output = open(output_file_jsn, 'w')
+        json.dump(lerp_data, output)
+        output.close()
+
+        # Time - MMSI - Position
+        output_file_jsn = output_file + '_lerp_time.json'
+        output = open(output_file_jsn, 'w')
+        times = {}
+        for dat in lerp_data.items():
+            for d in dat[1]:
+                if not times.get(d):
+                    times.update({d:{dat[0]:{'lat':dat[1][d]['lat'], 'lng':dat[1][d]['lng']}}})
+                else:
+                    if dat[0] in times[d]:
+                        times[d][dat[0]].update({'lat':dat[1][d]['lat'], 'lng':dat[1][d]['lng']})
+                    else:
+                        times[d].update({dat[0]:{'lat':dat[1][d]['lat'], 'lng':dat[1][d]['lng']}})
+        json.dump(times, output)
+        output.close()
+
+
+def calc_distance(lerp_data, latitude, longitude, altitude):
+    for dat in lerp_data.items():
+        for d in dat[1]:
+            az, el, dst = pm.geodetic2aer(dat[1][d]['lat'], dat[1][d]['lng'], 0, latitude, longitude, altitude)
+            lerp_data[dat[0]][d].update({'az':az, 'el':el, 'range':dst})
+    return lerp_data
 
 
 if __name__ == '__main__':
